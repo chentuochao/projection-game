@@ -76,7 +76,7 @@ def render_body(frame, body):
 def render_gesture(frame, gesture):
     try:
         for i in gesture['result']:
-            if i['probability'] > 0.5:
+            if i['probability'] > 0.3 and i['classname'] != 'Face':
                 top = int(i['top'])
                 height = int(i['height'])
                 left = int(i['left'])
@@ -121,7 +121,10 @@ def main():
                     queue_task.get_nowait()
                 try:
                     body = queue_task.get_nowait().get_result()
-                    tmpbody = body.copy()
+                    try:
+                        tmpbody = body.copy()
+                    except:
+                        pass
                 except queue.Empty:
                     body = tmpbody
                 # render_body(frame, body)

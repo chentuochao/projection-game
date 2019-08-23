@@ -21,7 +21,7 @@ args = vars(ap.parse_args())
 
 # initiate camera
 if args.get("video", None) is None:
-    camera = cv2.VideoCapture(0)
+    camera = cv2.VideoCapture(1)
     time.sleep(0.25)
 else:
     camera = cv2.VideoCapture(args["video"])
@@ -52,24 +52,40 @@ def read_camera(camera):
 # call baidu sdk
 def call_baidu(frame):
     ret, data = cv2.imencode('.png', frame)     # correct!
-    body = baidu.client.bodyAnalysis(data)
+    # body = baidu.client.bodyAnalysis(data)
+    body = baidu.client.gesture(data)
     return body
 
 # render in the frame
-def render(frame, body):
+def render_body(frame, body):
     try:
         for i in body['person_info']:
             if i['location']['score'] > 0.03:
                 for part in i['body_parts']:
-                    x = i['body_parts'][part]['x']
-                    y = i['body_parts'][part]['y']
+                    x = int(i['body_parts'][part]['x'])
+                    y = int(i['body_parts'][part]['y'])
                     if i['body_parts'][part]['score'] > 0.3:
-                        cv2.circle(frame,(int(x), int(y)), 3, (0, 145, 240), -1)
-                        cv2.putText(frame, part, (int(x)+1, int(y)+1), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8, (156, 144, 238))
+                        cv2.circle(frame,(x, y), 3, (0, 145, 240), -1)
+                        cv2.putText(frame, part, (x+1, y+1), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.8, (156, 144, 238))
     except Exception as e:
         print("baidu API has not returned yet!")
-        print("in render(frame, body): ", e)
+        print("in render_body(frame, body): ", e)
         print(body)
+    return frame
+
+def render_gesture(frame, gesture):
+    try:
+        for i in gesture['result']:
+            if i['probability'] > 0.5:
+                top = int(i['top'])
+                height = int(i['height'])
+                left = int(i['left'])
+                width = int(i['width'])
+                cv2.rectangle(frame, (left, top), (left+width, top+height), (250, 180, 56), thickness=10)
+    except Exception as e:
+        print("baidu API has not returned yet!")
+        print("in render_gesture(frame, gesture): ", e)
+        print(gesture)
     return frame
 
 # show frame
@@ -108,9 +124,11 @@ def main():
                     tmpbody = body.copy()
                 except queue.Empty:
                     body = tmpbody
-                render(frame, body)
+                # render_body(frame, body)
+                render_gesture(frame, body)
             else:
-                render(frame, tmpbody)
+                # render_body(frame, tmpbody)
+                render_gesture(frame, tmpbody)
             display(frame)
             print(queue_task.qsize())
             # to keep showing video

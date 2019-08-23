@@ -27,6 +27,7 @@ else:
     camera = cv2.VideoCapture(args["video"])
 
 now = lambda: time.time()
+client = baidu.client
 
 class MyThread(Thread):
     def __init__(self, target, args=()):
@@ -53,7 +54,7 @@ def read_camera(camera):
 def call_baidu(frame):
     ret, data = cv2.imencode('.png', frame)     # correct!
     # body = baidu.client.bodyAnalysis(data)
-    body = baidu.client.gesture(data)
+    body = client.gesture(data)
     return body
 
 # render in the frame

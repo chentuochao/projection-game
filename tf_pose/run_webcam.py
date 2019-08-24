@@ -56,7 +56,7 @@ if __name__ == '__main__':
         l = image.shape[1]
         h = image.shape[0]
 
-        image = image[0:l//2, 0:h//2]
+        # image = image[0:l//2, 0:h//2]
 
         logger.debug('image process+')
         humans = e.inference(image, resize_to_default=(w > 0 and h > 0), upsample_size=args.resize_out_ratio)

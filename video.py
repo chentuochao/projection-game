@@ -27,6 +27,7 @@ else:
     camera = cv2.VideoCapture(args["video"])
 
 now = lambda: time.time()
+client = baidu.client
 
 class MyThread(Thread):
     def __init__(self, target, args=()):
@@ -53,7 +54,7 @@ def read_camera(camera):
 def call_baidu(frame):
     ret, data = cv2.imencode('.png', frame)     # correct!
     # body = baidu.client.bodyAnalysis(data)
-    body = baidu.client.gesture(data)
+    body = client.gesture(data)
     return body
 
 # render in the frame
@@ -76,7 +77,7 @@ def render_body(frame, body):
 def render_gesture(frame, gesture):
     try:
         for i in gesture['result']:
-            if i['probability'] > 0.5:
+            if i['probability'] > 0.3 and i['classname'] != 'Face':
                 top = int(i['top'])
                 height = int(i['height'])
                 left = int(i['left'])
@@ -121,7 +122,10 @@ def main():
                     queue_task.get_nowait()
                 try:
                     body = queue_task.get_nowait().get_result()
-                    tmpbody = body.copy()
+                    try:
+                        tmpbody = body.copy()
+                    except:
+                        pass
                 except queue.Empty:
                     body = tmpbody
                 # render_body(frame, body)

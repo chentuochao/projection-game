@@ -121,52 +121,55 @@ def match(mouse_position):   #检测是否手在圆圈内，在的话，发出�
             if pow(mouse_position[0]-shape.position[0],2)+pow(mouse_position[1]-shape.position[1],2)<pow(shape.radius,2):
                 print("kick")
                 track1 = pygame.mixer.music.load(oggfilelist[0])
-                pygame.mixer.music.stop()
-                pygame.mixer.music.play()   
+                #pygame.mixer.music.stop()
+                pygame.mixer.music.play(1,0.3)   
         elif shape.SHAPE=='r':
             if fabs(mouse_position[1]-shape.position[1])<shape.radius/2 or fabs(mouse_position[0]-shape.position[0])<shape.radius/2:
                 print("kick")
-                track1 = pygame.mixer.music.load(oggfilelist[1])
-                pygame.mixer.music.stop()
-                pygame.mixer.music.play()       
+                track1 = pygame.mixer.music.load(oggfilelist[3])
+                #pygame.mixer.music.stop()
+                pygame.mixer.music.play(1,0.1)       
 
 def main():
     position = [size[0] // 2 , size[1] // 2]  
     direction=-90
     color=BLACK
-    ifbound=0
+    ifbound=1
     velocity=200
-    radius=40
+    radius=50
     acc=0
     A_dir=0
     width = 0
-    shape=Myshape(position, velocity, direction, acc, A_dir, 'c', radius, color, width, ifbound)
+    shape=Myshape(position, velocity, direction, acc, A_dir, 'r', radius, color, width, ifbound)
     shape_tuple.append(shape)
     past=time.time()
     while True:
         for event in pygame.event.get():
+            t1=time.time()
             if event.type == pygame.QUIT:
                 sys.exit()
                 raise KeyboardInterrupt  # 退出游戏
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 sys.exit()
                 raise KeyboardInterrupt  # 退出游戏
-            #if event.type == pygame.MOUSEBUTTONDOWN: # 获取点击鼠标事件
-                #if event.button == 1:  # 点击鼠标左键
-                    #mouse_position = pygame.mouse.get_pos()
-                    #match(mouse_position)
+            if event.type == pygame.MOUSEBUTTONDOWN: # 获取点击鼠标事件
+                if event.button == 1:  # 点击鼠标左键
+                    mouse_position = pygame.mouse.get_pos()
+                    match(mouse_position)
+                    #print(time.time()-t1)
+
             #-------------------code below------------------------
             #返回当前视频中的手的位置与大小,赋值给hand_position
             #-------------------code above------------------------
-            hand_position_conv = convert_position(hand_position)
-            match(hand_position_conv)
+            # hand_position_conv = convert_position(hand_position)
+            # match(hand_position_conv)
         now=time.time()
         t=now-past
         past=now
         for shape in shape_tuple:   
             move(shape, t)          # movement, update shapes' position & accelarate, update shapes' velocity
         mydraw()
-        time.sleep(0.1)
+        #time.sleep(0.1)
 
     
 if __name__ == '__main__':

@@ -9,6 +9,26 @@ from math import *
 import time
 import random
 import os
+import socket
+import threading
+
+
+addr_info=socket.getaddrinfo("192.168.4.1",80)
+addr=addr_info[0][-1]
+s=socket.socket()
+s.connect(addr)
+ans=b'0'
+end = 0 
+def handle(sx):     #sx表示第sx个客户端，接受信息
+    while 1:
+        if end==1:
+            break
+        ans=s.recv(1)
+        print('message from client')
+
+
+t = threading.Thread(target=handle,args=())   #开启一个新的线程专门负责当前客户端数据接收
+t.start()
 # 初始化
 pygame.init()
 
@@ -155,11 +175,13 @@ def main():
                 #if event.button == 1:  # 点击鼠标左键
                     #mouse_position = pygame.mouse.get_pos()
                     #match(mouse_position)
+        if ans==b'1':
             #-------------------code below------------------------
-            #返回当前视频中的手的位置与大小,赋值给hand_position
+            #返回当前视频中的手的位置,赋值给hand_position
             #-------------------code above------------------------
             hand_position_conv = convert_position(hand_position)
             match(hand_position_conv)
+            ans = b'0'
         now=time.time()
         t=now-past
         past=now
@@ -173,4 +195,5 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
+        end = 1
         print('Goodbye')

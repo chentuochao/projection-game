@@ -21,7 +21,7 @@ args = vars(ap.parse_args())
 
 # initiate camera
 if args.get("video", None) is None:
-    camera = cv2.VideoCapture(1)
+    camera = cv2.VideoCapture(0)
     time.sleep(0.25)
 else:
     camera = cv2.VideoCapture(args["video"])

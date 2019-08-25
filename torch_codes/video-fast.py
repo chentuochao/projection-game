@@ -6,8 +6,9 @@ import numpy as np
 import torch
 
 parser = argparse.ArgumentParser(description='Add path of the light-weight openpose repo')
+# parser.add_argument('--package-dir', type=str, required=True)     # distributed version
 parser.add_argument('--package-dir', type=str,
-    default='/media/bob-lytton/MyData/myDownload/lightweight-human-pose-estimation.pytorch')
+    default='/media/bob-lytton/MyData/repos/torch_pose')
 
 args = parser.parse_args()
 print(args.package_dir)
@@ -98,7 +99,11 @@ def run_demo(net, image_provider, height_size, cpu, track_ids):
     previous_poses = []
     for img in image_provider:
         orig_img = img.copy()
+        # get human pose information
         heatmaps, pafs, scale, pad = infer_fast(net, img, height_size, stride, upsample_ratio, cpu)
+
+        # print(heatmaps)
+        # print(pafs)
 
         total_keypoints_num = 0
         all_keypoints_by_type = []
@@ -142,7 +147,7 @@ if __name__ == '__main__':
         description='''Lightweight human pose estimation python demo.
                        This is just for quick results preview.
                        Please, consider c++ demo for the best performance.''')
-    parser.add_argument('--checkpoint-path', type=str, help='path to the checkpoint', default='/media/bob-lytton/MyData/myDownload/lightweight-human-pose-estimation.pytorch/checkpoint_iter_370000.pth')
+    parser.add_argument('--checkpoint-path', type=str, help='path to the checkpoint', default='/media/bob-lytton/MyData/repos/torch_pose/checkpoint_iter_370000.pth')
     parser.add_argument('--height-size', type=int, default=256, help='network input layer height size')
     parser.add_argument('--video', type=str, default='0', help='path to video file or camera id')
     parser.add_argument('--images', nargs='+', default='', help='path to input image(s)')

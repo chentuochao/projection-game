@@ -73,7 +73,7 @@ print("sys.platform is", sys.platform)
 # Define path to raw file
 if sys.platform.lower().find('win') != -1:
     rawPath = '.\\raw'
-elif sys.platform.lower().find('linux') != -1:
+elif sys.platform.lower().find('linux') != -1 or sys.platform.lower().find('darwin'):
     rawPath = './raw'
 files=['luo.mp3','drum.mp3','drum2.mp3','drum3.mp3','drum4.mp3'] 
 oggfilelist = []

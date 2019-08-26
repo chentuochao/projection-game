@@ -45,9 +45,12 @@ def connect():
     addr = addr_info[0][-1]
     s = socket.socket()
     s.connect(addr) 
+    print("Connect Succefully")
     def handle(sx):     # sx表示第sx个客户端，接受信息
+        global ans
         while True:
             if end == 1:
+                sx.close()
                 break
             # ans = s.recv(1)   # what does the arg 'sx' do?
             ans = sx.recv(1)    # i guess it's used like this
@@ -199,6 +202,7 @@ def initialization():
     pygame.display.flip()
     
 initialization()
+connect().start()
 print("pygame initialization done.")
 
 print("sys.platform is", sys.platform)

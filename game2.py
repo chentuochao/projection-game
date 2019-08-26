@@ -10,11 +10,13 @@ import sys
 import threading
 import time
 from math import *
+
+import cv2
+import numpy as np
 import pygame
 
 import video
 from Myshape import Myshape
-import numpy as np
 
 # parsing commandline arguments
 parser = argparse.ArgumentParser(
@@ -82,8 +84,14 @@ def calibration(q1, q2, q3, p1, p2, p3):
     qx=np.array( [ [q1[0]], [q2[0]], [q3[0]] ])
     qy=np.array( [ [q1[1]], [q2[1]], [q3[1]] ])
 
-    a = np.matmul( np.linalg.inv(p), qx)
-    b = np.matmul( np.linalg.inv(p), qy)
+    try:
+        p_inv = np.linalg.inv(p)
+        a = np.matmul(p_inv, qx)
+        b = np.matmul(p_inv, qy)
+        return True
+    except np.linalg.LinAlgError as e:
+        print(e)
+        return False
 
 def convert_position(p1):    # convert the coordinate of camera to the coordinate of projection 
     global a
@@ -100,7 +108,7 @@ def convert_position(p1):    # convert the coordinate of camera to the coordinat
 
 #The function for intialization and calibration
 def draw_circle(q1,q2,q3):   #画图函数
-    screen = pygame.display.set_mode(size,pygame.FULLSCREEN)
+    screen = pygame.display.set_mode(size)
     screen.fill(WHITE) # 填充屏幕
     pygame.draw.circle(screen, BLACK, q1, 10, 0) 
     pygame.draw.circle(screen, BLACK, q2, 10, 0) 
@@ -109,7 +117,7 @@ def draw_circle(q1,q2,q3):   #画图函数
     pygame.display.flip()
 
 def draw_grids(q):   #测试函数
-    screen = pygame.display.set_mode(size,pygame.FULLSCREEN)
+    screen = pygame.display.set_mode(size)
     screen.fill(WHITE) # 填充屏幕
     divide=10
     for i in range(1,divide):   #horizon
@@ -152,18 +160,18 @@ def Get_picture(i):    #get, save and visualize a picture from camera
                 raise KeyboardInterrupt  # 退出游戏
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
                 
-                pic_size = frame.shape
+                pic_size = frame.shape[1::-1]
                 #print(frame.shape)
                 cv2.imwrite('./' + str(i) + '.jpg', frame)
-                flag=1
+                flag = 1
         if flag==1:
             break
 
     print("Get pic!!")
     #print(pic_size)
-    screen = pygame.display.set_mode(pic_size, pygame.FULLSCREEN)
+    screen = pygame.display.set_mode(pic_size)
     screen.fill(WHITE)
-    space = pygame.image.load('./' + str(i) + '.jpg', frame)
+    space = pygame.image.load('./' + str(i) + '.jpg')
     screen.blit(space, (0, 0))
     # 3.刷新游戏窗口
     pygame.display.update()
@@ -176,10 +184,15 @@ def initialization():
     draw_circle(q1,q2,q3)
 
     Get_picture(0)   #0 is the number of picture
+
     p1=get_pos()
     p2=get_pos()
     p3=get_pos()
-    calibration(q1,q2,q3,p1,p2,p3)    # calculate the calbration cofficient
+    while calibration(q1, q2, q3, p1, p2, p3) is not True:
+        p1=get_pos()
+        p2=get_pos()
+        p3=get_pos()
+        # calibration(q1,q2,q3,p1,p2,p3)    # calculate the calbration cofficient
 
 
     #test the calibratiob
@@ -187,14 +200,17 @@ def initialization():
     test_q= ((0,0), (1280,0), (1280,800), (0,800), (640,400))
     error = 15
     draw_grids(test_q)
+    print("p1")
     Get_picture(1)
+    print("p1")
     for num in range(0, 5):
+        print(num)
         p = convert_position(get_pos())
-        if abs(p[1]-test[num][1]) > error or abs(p[0]-test[num][0]) > error:
+        if abs(p[1]-test_q[num][1]) > error or abs(p[0]-test_q[num][0]) > error:
             print("Calibration Error: Fail to acquire an accurate calibration!")
             sys.exit()
             raise KeyboardInterrupt  # 退出游戏
-    screen = pygame.display.set_mode(size,pygame.FULLSCREEN)
+    screen = pygame.display.set_mode(size)
     screen.fill(WHITE) # 填充屏幕
     pygame.display.flip()
     
@@ -324,15 +340,15 @@ def main(net, frame_provider, height_size, cpu, track_ids, ans, end):
                 # if event.button == 1:  # 点击鼠标左键
                     # mouse_position = pygame.mouse.get_pos()
                     # match(mouse_position)
-        if ans == b'1':
-            # -------------------code below------------------------
-            # TODO: 返回当前视频中的手的位置,赋值给hand_position
-            _, _, left_wrists, right_wrists = video.run(net, frame_provider, height_size, cpu, track_ids)
-            hand_position = (left_wrists, right_wrists)
-            # -------------------code above------------------------
-            hand_position_convert = convert_position(hand_position)
-            match(hand_position_convert)
-            ans = b'0'
+        # if ans == b'1':
+        # -------------------code below------------------------
+        # TODO: 返回当前视频中的手的位置,赋值给hand_position
+        _, _, left_wrists, right_wrists = video.run(net, frame_provider, height_size, cpu, track_ids)
+        hand_position = (left_wrists, right_wrists)
+        # -------------------code above------------------------
+        hand_position_convert = convert_position(hand_position)
+        match(hand_position_convert)
+        ans = b'0'
 
         now = time.time()
         t = now - past

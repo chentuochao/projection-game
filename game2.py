@@ -55,6 +55,7 @@ def connect():
                 sx.close()
                 break
             ans = sx.recv(1)
+            print(ans)
             print('message from client')
 
     t = threading.Thread(target=handle, args=(s,))   # 开启一个新的线程专门负责当前客户端数据接收, changed 'args' from () to (s,)
@@ -113,10 +114,10 @@ def initialization(width = 1920, height = 1080):
         p3=get_pos()
         # calibration(q1,q2,q3,p1,p2,p3)    # calculate the calbration cofficient
 
-
     # test the calibratiob
     # 左上，右上，右下，左下，中间
-    test_q= ((0,0), (width,0), (width,height), (0,height), (width//2,height//2))
+    '''
+    test_q= ((0,0), (0,height), (width//2,height//2), (width,height), (0,height))
     errorx = 50
     errory = 50
     draw_grids(test_q)
@@ -125,14 +126,18 @@ def initialization(width = 1920, height = 1080):
     print("p1")
     for num in range(0, 0):
         print(num)
-        p = convert_position(get_pos())
-        print(p)
-        if abs(p[1]-test_q[num][1]) > errory or abs(p[0]-test_q[num][0]) > errorx:
-            print("Calibration Error: Fail to acquire an accurate calibration!")
-            sys.exit()
-            raise KeyboardInterrupt  # 退出游戏
+        pos = convert_position((get_pos(),))
+        print(pos)
+        for p in pos:
+            if abs(p[1]-test_q[num][1]) > errory or abs(p[0]-test_q[num][0]) > errorx:
+                print("Calibration Error: Fail to acquire an accurate calibration!")
+                #sys.exit()
+                #raise KeyboardInterrupt  # 退出游戏
+    '''
     screen = pygame.display.set_mode(size)
     screen.fill(WHITE) # 填充屏幕
+    test_q= ((0,0), (0,height), (width//2,height//2), (width,height), (0,height))
+    draw_grids(test_q)
     pygame.display.flip()
     return screen
 
@@ -188,6 +193,8 @@ def draw_circle(q1,q2,q3,size=(1920,1080)):   # 画图函数
     pygame.display.flip()
 
 def draw_grids(q,size=(1920,1080)):   # 测试函数
+    width = size[0]
+    height = size[1]
     screen = pygame.display.set_mode(size)# ,pygame.FULLSCREEN)
     screen.fill(WHITE) # 填充屏幕
     divide=10
@@ -311,22 +318,25 @@ def mydraw(screen):   # 画图函数
             pygame.draw.rect(screen, shape.color, (int(shape.position[0]), int(shape.position[1]), shape.radius, shape.radius), shape.width) 
     pygame.display.flip()
 
-def match(mouse_position):   # 检测是否手在圆圈内，在的话，发出击鼓的声音
-    for shape in shape_tuple:
-        if shape.SHAPE=='c':
-            if pow(mouse_position[0]-shape.position[0],2)+pow(mouse_position[1]-shape.position[1],2)<pow(shape.radius,2):
-                print("kick")
-                track1 = pygame.mixer.music.load(oggfilelist[0])
-                pygame.mixer.music.stop()
-                pygame.mixer.music.play()   
-        elif shape.SHAPE=='r':
-            if fabs(mouse_position[1]-shape.position[1])<shape.radius/2 or fabs(mouse_position[0]-shape.position[0])<shape.radius/2:
-                print("kick")
-                track1 = pygame.mixer.music.load(oggfilelist[1])
-                pygame.mixer.music.stop()
-                pygame.mixer.music.play()       
+def match(positions):   # 检测是否手在圆圈内，在的话，发出击鼓的声音
+    for mouse_position in positions:
+        for shape in shape_tuple:
+            if shape.SHAPE=='c':
+                if pow(mouse_position[0]-shape.position[0],2)+pow(mouse_position[1]-shape.position[1],2)<pow(shape.radius,2):
+                    print("kick")
+                    track1 = pygame.mixer.music.load(oggfilelist[0])
+                    pygame.mixer.music.stop()
+                    pygame.mixer.music.play()   
+            elif shape.SHAPE=='r':
+                if fabs(mouse_position[1]-shape.position[1])<shape.radius/2 or fabs(mouse_position[0]-shape.position[0])<shape.radius/2:
+                    print("kick")
+                    track1 = pygame.mixer.music.load(oggfilelist[1])
+                    pygame.mixer.music.stop()
+                    pygame.mixer.music.play()       
 
-def main(net, height_size, cpu, track_ids, ans, end, screen):
+def main(net, height_size, cpu, track_ids, screen):
+    global ans, end
+    width, height = 1920, 1080
     position  = [size[0] // 2 , size[1] // 2]  
     direction = -90
     color     = BLACK
@@ -335,12 +345,12 @@ def main(net, height_size, cpu, track_ids, ans, end, screen):
     radius    = 40
     acc       = 0
     A_dir     = 0
-    width     = 0
-    shape     = Myshape(position, velocity, direction, acc, A_dir, 'c', radius, color, width, ifbound)
-    shape_tuple.append(shape)
+    # width     = 0
+    #shape     = Myshape(position, velocity, direction, acc, A_dir, 'c', radius, color, width, ifbound)
+    #shape_tuple.append(shape)
 
     past = time.time()
-
+    
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -356,23 +366,24 @@ def main(net, height_size, cpu, track_ids, ans, end, screen):
         if ans == b'1':
             # -------------------code below------------------------
             # TODO: 返回当前视频中的手的位置,赋值给hand_position
+            print(1)
             _, _, left_wrists, right_wrists = video.run(net, cap.read()[1], height_size, cpu, track_ids)
             hand_position = np.append(left_wrists, right_wrists, axis=0)
+            print(hand_position)
             # -------------------code above------------------------
             hand_position_convert = convert_position(hand_position)
-            print(hand_position.shape)
+            print(hand_position_convert)
             match(hand_position_convert)
             ans = b'0'
 
         now = time.time()
         t = now - past
         past = now
-        print("running...")
+        # print("running...")
         for shape in shape_tuple:   
             move(shape, t)          # movement, update shapes' position & accelarate, update shapes' velocity
-        mydraw(screen)
+        # mydraw(screen)
         time.sleep(0.1)
-
     
 if __name__ == '__main__':
 
@@ -380,7 +391,7 @@ if __name__ == '__main__':
 
     screen = initialization()
     print("pygame initialization success!")
-    # connect().start()
+    connect().start()
 
     # init body recognition model
     net = video.PoseEstimationWithMobileNet()
@@ -391,7 +402,7 @@ if __name__ == '__main__':
 
     # start main function
     try:
-        main(net, args.height_size, args.cpu, args.track_ids, ans, end, screen)
+        main(net, args.height_size, args.cpu, args.track_ids, screen)
     except KeyboardInterrupt:
         cap.release()
         end = 1

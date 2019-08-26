@@ -105,8 +105,8 @@ def convert_position(hand_position):   # 将摄像机中的坐标转化成投影
     posys = []
     for wrists in hand_position:
         for pos in wrists:        
-            posxs.append(size[0] // 2 + (hand_position[0]-cal_x)*40/cal_rx)
-            posys.append(size[1] // 2 + (hand_position[1]-cal_y)*40/cal_ry)
+            posxs.append()
+            posys.append()
 
     return (posxs, posys)
 

@@ -31,9 +31,8 @@ parser.add_argument('--images', nargs='+', default='', help='path to input image
 parser.add_argument('--cpu', action='store_true', help='run network inference on cpu')
 parser.add_argument('--track-ids', default=True, help='track poses ids')
 args = parser.parse_args()  # get a global variable 'args', used in __main__
-if args.video == '' and args.images == '':
-    raise ValueError('Either --video or --image has to be provided')
-
+# if args.video == '' and args.images == '':
+#     raise ValueError('Either --video or --image has to be provided')
 
 ans = b'0'
 end = 0
@@ -41,11 +40,12 @@ def connect():
     """
     connect to ESP8266 terminal device
 
-    return: new thread t
+        return: new thread t
     """
     addr_info = socket.getaddrinfo("192.168.4.1",80)
     addr = addr_info[0][-1]
     s = socket.socket()
+    print("connecting")
     s.connect(addr) 
     print("Connect Succefully")
     def handle(sx):     # sx表示第sx个客户端，接受信息
@@ -54,8 +54,7 @@ def connect():
             if end == 1:
                 sx.close()
                 break
-            # ans = s.recv(1)   # what does the arg 'sx' do?
-            ans = sx.recv(1)    # i guess it's used like this
+            ans = sx.recv(1)
             print('message from client')
 
     t = threading.Thread(target=handle, args=(s,))   # 开启一个新的线程专门负责当前客户端数据接收, changed 'args' from () to (s,)
@@ -64,8 +63,8 @@ def connect():
 # Global variables
 print("pygame initializing...")
 pygame.init()   # pygame初始化
-cap = cv2.VideoCapture(0)    #initialize the camera
-size = width,height = 1280,800 # 设置屏幕尺寸1920,1080
+cap = cv2.VideoCapture(0)    # initialize the camera
+size = width,height = 1920,1080 # 设置屏幕尺寸1920,1080
 pic_size = 640, 480
 # Define colors
 BLUE   = 0,0,255
@@ -73,156 +72,11 @@ WHITE  = 255,255,255
 BLACK  = 0,0,0
 RED    = 255,0,0
 GREEN  = 0,255,0
-# 转换系数
-a=[]
-b=[]
-#screen = pygame.display.set_mode(size) # 创建surface对象
-#pygame.display.set_caption('Projection game') # 创建标题
-#-----------------------coordinate converting function-----------------------
-def calibration(q1, q2, q3, p1, p2, p3):
-    global a
-    global b
 
-    p=np.array([ [ p1[0],p1[1],1 ],[ p2[0], p2[1],1 ],[ p3[0], p3[1],1 ] ])
-    qx=np.array( [ [q1[0]], [q2[0]], [q3[0]] ])
-    qy=np.array( [ [q1[1]], [q2[1]], [q3[1]] ])
-
-    try:
-        p_inv = np.linalg.inv(p)
-        a = np.matmul(p_inv, qx)
-        b = np.matmul(p_inv, qy)
-        return True
-    except np.linalg.LinAlgError as e:
-        print(e)
-        return False
-
-def convert_position(p1):    # convert the coordinate of camera to the coordinate of projection 
-    global a
-    global b
-
-    p = np.array([p1[0], p1[1], 1])
-    #print('===')
-    #print(a)
-    qx = np.matmul(p, a)
-    qy = np.matmul(p, b)
-    return([qx, qy])
-#------------------------------------------------------------------------------
-
-
-#The function for intialization and calibration
-def draw_circle(q1,q2,q3):   #画图函数
-    screen = pygame.display.set_mode(size)
-    screen.fill(WHITE) # 填充屏幕
-    pygame.draw.circle(screen, BLACK, q1, 10, 0) 
-    pygame.draw.circle(screen, BLACK, q2, 10, 0) 
-    pygame.draw.circle(screen, BLACK, q3, 10, 0) 
-
-    pygame.display.flip()
-
-def draw_grids(q):   #测试函数
-    screen = pygame.display.set_mode(size)
-    screen.fill(WHITE) # 填充屏幕
-    divide=10
-    for i in range(1,divide):   #horizon
-        pygame.draw.line(screen, BLACK, (0, height*i/divide), (width,height*i/divide), 2)
-
-    for i in range(1,divide):   #vertical
-        pygame.draw.line(screen, BLACK, (width*i/divide,0), (width*i/divide, height), 2)
-    pygame.draw.circle(screen, RED, q[0], 10, 0) 
-    pygame.draw.circle(screen, RED, q[1], 10, 0) 
-    pygame.draw.circle(screen, RED, q[2], 10, 0) 
-    pygame.draw.circle(screen, RED, q[3], 10, 0) 
-    pygame.draw.circle(screen, RED, q[4], 10, 0) 
-    pygame.display.flip()
-
-def get_pos():   #return the position where the mouse clicks 
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
-                raise KeyboardInterrupt  # 退出游戏
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                sys.exit()
-                raise KeyboardInterrupt  # 退出游戏
-            if event.type == pygame.MOUSEBUTTONDOWN: # 获取点击鼠标事件
-                if event.button == 1:  # 点击鼠标左键
-                    mouse_position = pygame.mouse.get_pos()
-                    #print(mouse_position)
-                    return mouse_position
-
-def Get_picture(i):    #get, save and visualize a picture from camera
-    while (1):
-        ret, frame = cap.read()
-        flag=0
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
-                raise KeyboardInterrupt  # 退出游戏
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                sys.exit()
-                raise KeyboardInterrupt  # 退出游戏
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                
-                pic_size = frame.shape[1::-1]
-                #print(frame.shape)
-                cv2.imwrite('./' + str(i) + '.jpg', frame)
-                flag = 1
-        if flag==1:
-            break
-
-    print("Get pic!!")
-    #print(pic_size)
-    screen = pygame.display.set_mode(pic_size)
-    screen.fill(WHITE)
-    space = pygame.image.load('./' + str(i) + '.jpg')
-    screen.blit(space, (0, 0))
-    # 3.刷新游戏窗口
-    pygame.display.update()
-
-
-def initialization():
-    q1=(540,120)
-    q2=(140,630)
-    q3=(840,630)
-    draw_circle(q1,q2,q3)
-
-    Get_picture(0)   #0 is the number of picture
-
-    p1=get_pos()
-    p2=get_pos()
-    p3=get_pos()
-    while calibration(q1, q2, q3, p1, p2, p3) is not True:
-        p1=get_pos()
-        p2=get_pos()
-        p3=get_pos()
-        # calibration(q1,q2,q3,p1,p2,p3)    # calculate the calbration cofficient
-
-
-    #test the calibratiob
-    #左上，右上，右下，左下，中间
-    test_q= ((0,0), (1280,0), (1280,800), (0,800), (640,400))
-    error = 15
-    draw_grids(test_q)
-    print("p1")
-    Get_picture(1)
-    print("p1")
-    for num in range(0, 5):
-        print(num)
-        p = convert_position(get_pos())
-        if abs(p[1]-test_q[num][1]) > error or abs(p[0]-test_q[num][0]) > error:
-            print("Calibration Error: Fail to acquire an accurate calibration!")
-            sys.exit()
-            raise KeyboardInterrupt  # 退出游戏
-    screen = pygame.display.set_mode(size)
-    screen.fill(WHITE) # 填充屏幕
-    pygame.display.flip()
-    
-initialization()
-connect().start()
-print("pygame initialization done.")
+# screen = pygame.display.set_mode(size) # 创建surface对象
+# pygame.display.set_caption('Projection game') # 创建标题
 
 print("sys.platform is", sys.platform)
-
 # Define path to raw file
 if sys.platform.lower().find('win') != -1:
     rawPath = '.\\raw'
@@ -237,8 +91,163 @@ print(oggfilelist)
 pygame.mixer.init(buffer=4096) # 只初始化声音
 shape_tuple=[]
 
+# 转换系数
+a=[]
+b=[]
+
+def initialization(width = 1920, height = 1080):
+    size=1920, 1080
+    q1=(540,120)
+    q2=(140,630)
+    q3=(840,630)
+    draw_circle(q1,q2,q3)
+
+    Get_picture(0)   # 0 is the number of picture
+
+    p1=get_pos()
+    p2=get_pos()
+    p3=get_pos()
+    while calibration(q1, q2, q3, p1, p2, p3) is not True:
+        p1=get_pos()
+        p2=get_pos()
+        p3=get_pos()
+        # calibration(q1,q2,q3,p1,p2,p3)    # calculate the calbration cofficient
 
 
+    # test the calibratiob
+    # 左上，右上，右下，左下，中间
+    test_q= ((0,0), (width,0), (width,height), (0,height), (width//2,height//2))
+    errorx = 50
+    errory = 50
+    draw_grids(test_q)
+    print("p1")
+    Get_picture(1)
+    print("p1")
+    for num in range(0, 0):
+        print(num)
+        p = convert_position(get_pos())
+        print(p)
+        if abs(p[1]-test_q[num][1]) > errory or abs(p[0]-test_q[num][0]) > errorx:
+            print("Calibration Error: Fail to acquire an accurate calibration!")
+            sys.exit()
+            raise KeyboardInterrupt  # 退出游戏
+    screen = pygame.display.set_mode(size)
+    screen.fill(WHITE) # 填充屏幕
+    pygame.display.flip()
+    return screen
+
+# -----------------------coordinate converting function-----------------------
+def calibration(q1, q2, q3, p1, p2, p3):
+    global a
+    global b
+
+    p=np.array([ [ p1[0],p1[1],1 ],[ p2[0], p2[1],1 ],[ p3[0], p3[1],1 ] ])
+    qx=np.array( [ [q1[0]], [q2[0]], [q3[0]] ])
+    qy=np.array( [ [q1[1]], [q2[1]], [q3[1]] ])
+
+    try:
+        p_inv = np.linalg.inv(p)
+        a = np.matmul(p_inv, qx)
+        b = np.matmul(p_inv, qy)
+        print(a)
+        return True
+    except np.linalg.LinAlgError as e:
+        print(e)
+        return False
+
+def convert_position(position):    # convert the coordinate of camera to the coordinate of projection 
+    global a
+    global b
+
+    # p = np.array([float(p1[0], p1[1], 1]))
+    # # print('===')
+    # # print(a)
+    # qx = np.matmul(p, a)
+    # qy = np.matmul(p, b)
+    # return([qx, qy])
+    """
+    param: position shape: n*2
+    return: points shape: n*2
+    """
+    points = []
+    for pos in position:
+        p = np.array([float(pos[0]), float(pos[1]), 1.])
+        points.append([np.matmul(p, a), np.matmul(p, b)])
+
+    return points
+# ------------------------------------------------------------------------------
+
+# The function for intialization and calibration
+def draw_circle(q1,q2,q3,size=(1920,1080)):   # 画图函数
+    screen = pygame.display.set_mode(size)# ,pygame.FULLSCREEN)
+    screen.fill(WHITE) # 填充屏幕
+    pygame.draw.circle(screen, BLACK, q1, 20, 0) 
+    pygame.draw.circle(screen, BLACK, q2, 20, 0) 
+    pygame.draw.circle(screen, BLACK, q3, 20, 0) 
+
+    pygame.display.flip()
+
+def draw_grids(q,size=(1920,1080)):   # 测试函数
+    screen = pygame.display.set_mode(size)# ,pygame.FULLSCREEN)
+    screen.fill(WHITE) # 填充屏幕
+    divide=10
+    for i in range(1,divide):   # horizon
+        pygame.draw.line(screen, BLACK, (0, height*i//divide), (width,height*i//divide), 2)
+
+    for i in range(1,divide):   # vertical
+        pygame.draw.line(screen, BLACK, (width*i//divide,0), (width*i//divide, height), 2)
+
+    pygame.draw.circle(screen, RED, q[0], 20, 0) 
+    pygame.draw.circle(screen, RED, q[1], 20, 0) 
+    pygame.draw.circle(screen, RED, q[2], 20, 0) 
+    pygame.draw.circle(screen, RED, q[3], 20, 0) 
+    pygame.draw.circle(screen, RED, q[4], 20, 0) 
+    pygame.display.flip()
+
+def get_pos():   # return the position where the mouse clicks 
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+                raise KeyboardInterrupt  # 退出游戏
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                sys.exit()
+                raise KeyboardInterrupt  # 退出游戏
+            if event.type == pygame.MOUSEBUTTONDOWN: # 获取点击鼠标事件
+                if event.button == 1:  # 点击鼠标左键
+                    mouse_position = pygame.mouse.get_pos()
+                    # print(mouse_position)
+                    return mouse_position
+
+def Get_picture(i):     # get, save and visualize a picture from camera
+    while (1):
+        ret, frame = cap.read()
+        flag=0
+        # print(flag)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+                raise KeyboardInterrupt  # 退出游戏
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                sys.exit()
+                raise KeyboardInterrupt  # 退出游戏
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                pic_size = frame.shape[1::-1]
+                # print(frame.shape)
+                cv2.imwrite('./' + str(i) + '.jpg', frame)
+                flag = 1
+        if flag==1:
+            break
+
+    print("Get pic!!")
+    # print(pic_size)
+    screen = pygame.display.set_mode(pic_size)
+    screen.fill(WHITE)
+    space = pygame.image.load('./' + str(i) + '.jpg')
+    screen.blit(space, (0, 0))
+    # 3.刷新游戏窗口
+    pygame.display.update()
+   
 def move(shape, t):     # 投影中的形状早不断移动，物理引擎，支持加速度和速度，反弹
     boundx=[shape.radius, width-shape.radius]
     boundy=[shape.radius, height-shape.radius]
@@ -292,7 +301,7 @@ def move(shape, t):     # 投影中的形状早不断移动，物理引擎，支
     # print(vx,vy,shape.direction,direction2)
     # print(shape.direction)
 
-def mydraw():   # 画图函数
+def mydraw(screen):   # 画图函数
     screen.fill(WHITE) # 填充屏幕
     # 画各种尺寸颜色的圆
     for shape in shape_tuple:
@@ -317,11 +326,11 @@ def match(mouse_position):   # 检测是否手在圆圈内，在的话，发出�
                 pygame.mixer.music.stop()
                 pygame.mixer.music.play()       
 
-def main(net, frame_provider, height_size, cpu, track_ids, ans, end):
+def main(net, height_size, cpu, track_ids, ans, end, screen):
     position  = [size[0] // 2 , size[1] // 2]  
     direction = -90
     color     = BLACK
-    ifbound   = 0
+    ifbound   = 1       # border of screen
     velocity  = 200
     radius    = 40
     acc       = 0
@@ -344,22 +353,24 @@ def main(net, frame_provider, height_size, cpu, track_ids, ans, end):
                 # if event.button == 1:  # 点击鼠标左键
                     # mouse_position = pygame.mouse.get_pos()
                     # match(mouse_position)
-        # if ans == b'1':
-        # -------------------code below------------------------
-        # TODO: 返回当前视频中的手的位置,赋值给hand_position
-        _, _, left_wrists, right_wrists = video.run(net, frame_provider, height_size, cpu, track_ids)
-        hand_position = (left_wrists, right_wrists)
-        # -------------------code above------------------------
-        hand_position_convert = convert_position(hand_position)
-        match(hand_position_convert)
-        ans = b'0'
+        if ans == b'1':
+            # -------------------code below------------------------
+            # TODO: 返回当前视频中的手的位置,赋值给hand_position
+            _, _, left_wrists, right_wrists = video.run(net, cap.read()[1], height_size, cpu, track_ids)
+            hand_position = np.append(left_wrists, right_wrists, axis=0)
+            # -------------------code above------------------------
+            hand_position_convert = convert_position(hand_position)
+            print(hand_position.shape)
+            match(hand_position_convert)
+            ans = b'0'
 
         now = time.time()
         t = now - past
         past = now
+        print("running...")
         for shape in shape_tuple:   
             move(shape, t)          # movement, update shapes' position & accelarate, update shapes' velocity
-        mydraw()
+        mydraw(screen)
         time.sleep(0.1)
 
     
@@ -367,21 +378,20 @@ if __name__ == '__main__':
 
     print("start __main__")
 
+    screen = initialization()
+    print("pygame initialization success!")
+    # connect().start()
+
     # init body recognition model
     net = video.PoseEstimationWithMobileNet()
     checkpoint = video.torch.load(args.checkpoint_path, map_location='cpu')
     video.load_state(net, checkpoint)
 
-    frame_provider = video.ImageReader(args.images)
-    if args.video != '':
-        frame_provider = video.VideoReader(args.video)
-    print("step 1 success!")
+    print("loading cv model success!")
 
     # start main function
     try:
-        # t, ans, end = connect()     # if test without ESP8266, comment this line and one more line below
-        # t.start()
-        main(net, frame_provider, args.height_size, args.cpu, args.track_ids, ans, end)
+        main(net, args.height_size, args.cpu, args.track_ids, ans, end, screen)
     except KeyboardInterrupt:
         cap.release()
         end = 1

@@ -365,11 +365,19 @@ def main(net, height_size, cpu, track_ids, screen):
                     # match(mouse_position)
         if ans == b'1':
             # -------------------code below------------------------
-            # TODO: 返回当前视频中的手的位置,赋值给hand_position
+            # 返回当前视频中的手的位置,赋值给hand_position
+            # TODO: print image
             print(1)
-            _, _, left_wrists, right_wrists = video.run(net, cap.read()[1], height_size, cpu, track_ids)
+            out_img, current_poses, left_wrists, right_wrists = video.run(net, cap.read()[1], height_size, cpu, track_ids)
             hand_position = np.append(left_wrists, right_wrists, axis=0)
-            print(hand_position)
+            for pose in current_poses:
+                cv2.rectangle(out_img, (pose.bbox[0], pose.bbox[1]),
+                            (pose.bbox[0] + pose.bbox[2], pose.bbox[1] + pose.bbox[3]), (0, 255, 0))
+                cv2.putText(out_img, 'id: {}'.format(pose.id), (pose.bbox[0], pose.bbox[1] - 16),
+                            cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255))
+            for pos in hand_position:
+                cv2.putText(out_img, str(pos), (pos[0], pos[1]), cv2.FONT_HERSHEY_COMPLEX_SMALL, 10, (255, 0, 0))
+            # print(hand_position)
             # -------------------code above------------------------
             hand_position_convert = convert_position(hand_position)
             print(hand_position_convert)

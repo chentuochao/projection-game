@@ -47,7 +47,7 @@ def connect():
     s = socket.socket()
     print("connecting")
     s.connect(addr) 
-    print("Connect Succefully")
+    print("Connect Successfully")
     def handle(sx):     # sx表示第sx个客户端，接受信息
         global ans
         while True:
@@ -112,9 +112,8 @@ def initialization(width = 1920, height = 1080):
         p1=get_pos()
         p2=get_pos()
         p3=get_pos()
-        # calibration(q1,q2,q3,p1,p2,p3)    # calculate the calbration cofficient
 
-    # test the calibratiob
+    # test the calibration
     # 左上，右上，右下，左下，中间
     '''
     test_q= ((0,0), (0,height), (width//2,height//2), (width,height), (0,height))
@@ -229,6 +228,7 @@ def get_pos():   # return the position where the mouse clicks
 def Get_picture(i):     # get, save and visualize a picture from camera
     while (1):
         ret, frame = cap.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         flag=0
         # print(flag)
         for event in pygame.event.get():
@@ -240,8 +240,8 @@ def Get_picture(i):     # get, save and visualize a picture from camera
                 raise KeyboardInterrupt  # 退出游戏
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
                 pic_size = frame.shape[1::-1]
-                # print(frame.shape)
-                cv2.imwrite('./' + str(i) + '.jpg', frame)
+                # cv2.imwrite('./' + str(i) + '.jpg', frame)    # .jpg uses lossy compression
+                out_frame = frame
                 flag = 1
         if flag==1:
             break
@@ -250,7 +250,9 @@ def Get_picture(i):     # get, save and visualize a picture from camera
     # print(pic_size)
     screen = pygame.display.set_mode(pic_size)
     screen.fill(WHITE)
-    space = pygame.image.load('./' + str(i) + '.jpg')
+    # space = pygame.image.load('./photo/' + str(i) + '.jpg')   # this is deprecated!
+    # frame is BGR, need to change to RGB
+    space = pygame.image.frombuffer(out_frame, pic_size, 'RGB')
     screen.blit(space, (0, 0))
     # 3.刷新游戏窗口
     pygame.display.update()
@@ -363,26 +365,26 @@ def main(net, height_size, cpu, track_ids, screen):
                 # if event.button == 1:  # 点击鼠标左键
                     # mouse_position = pygame.mouse.get_pos()
                     # match(mouse_position)
-        if ans == b'1':
-            # -------------------code below------------------------
-            # 返回当前视频中的手的位置,赋值给hand_position
+        # if ans == b'1':
+            # return position of wrist and send to hand_position
             # TODO: print image
-            print(1)
-            out_img, current_poses, left_wrists, right_wrists = video.run(net, cap.read()[1], height_size, cpu, track_ids)
-            hand_position = np.append(left_wrists, right_wrists, axis=0)
-            for pose in current_poses:
-                cv2.rectangle(out_img, (pose.bbox[0], pose.bbox[1]),
-                            (pose.bbox[0] + pose.bbox[2], pose.bbox[1] + pose.bbox[3]), (0, 255, 0))
-                cv2.putText(out_img, 'id: {}'.format(pose.id), (pose.bbox[0], pose.bbox[1] - 16),
-                            cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255))
-            for pos in hand_position:
-                cv2.putText(out_img, str(pos), (pos[0], pos[1]), cv2.FONT_HERSHEY_COMPLEX_SMALL, 10, (255, 0, 0))
-            # print(hand_position)
-            # -------------------code above------------------------
-            hand_position_convert = convert_position(hand_position)
-            print(hand_position_convert)
-            match(hand_position_convert)
-            ans = b'0'
+        print(1)
+        out_img, current_poses, left_wrists, right_wrists = video.run(net, cap.read()[1], height_size, cpu, track_ids)
+        hand_position = np.append(left_wrists, right_wrists, axis=0)
+        for pose in current_poses:
+            cv2.rectangle(out_img, (pose.bbox[0], pose.bbox[1]),
+                        (pose.bbox[0] + pose.bbox[2], pose.bbox[1] + pose.bbox[3]), (0, 255, 0))
+            cv2.putText(out_img, 'id: {}'.format(pose.id), (pose.bbox[0], pose.bbox[1] - 16),
+                        cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255))
+        for pos in hand_position:
+            cv2.putText(out_img, str(pos), (pos[0], pos[1]), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (0, 0, 255))
+        cv2.imshow("camera", out_img)
+        key = cv2.waitKey(33)
+
+        hand_position_convert = convert_position(hand_position)
+        print(hand_position_convert)
+        match(hand_position_convert)
+        ans = b'0'
 
         now = time.time()
         t = now - past
@@ -397,9 +399,9 @@ if __name__ == '__main__':
 
     print("start __main__")
 
+    # connect().start()
     screen = initialization()
     print("pygame initialization success!")
-    connect().start()
 
     # init body recognition model
     net = video.PoseEstimationWithMobileNet()

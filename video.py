@@ -171,8 +171,9 @@ if __name__ == '__main__':
     for img in frame_provider:
         out_img, current_poses, left_wrists, right_wrists = run(net, img, args.height_size, args.cpu, args.track_ids)
         for pose in current_poses:
+            print(1)
             cv2.rectangle(out_img, (pose.bbox[0], pose.bbox[1]),
-                          (pose.bbox[0] + pose.bbox[2], pose.bbox[1] + pose.bbox[3]), (0, 255, 0))
+                          (pose.bbox[0] + pose.bbox[2], pose.bbox[1] + pose.bbox[3]), (0, 0, 255))
             cv2.putText(out_img, 'id: {}'.format(pose.id), (pose.bbox[0], pose.bbox[1] - 16),
                         cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255))
         for l_wri in left_wrists:
@@ -181,7 +182,7 @@ if __name__ == '__main__':
         for r_wri in right_wrists:
             cv2.putText(out_img, 'Right Wrist', (r_wri[0], r_wri[1]), cv2.FONT_HERSHEY_COMPLEX_SMALL, 10, (240, 158, 39))
 
-        cv2.imshow('Lightweight Human Pose Estimation Python Demo', img)
+        cv2.imshow('Lightweight Human Pose Estimation Python Demo', out_img)
 
         key = cv2.waitKey(33)
         if key == 27:  # esc
